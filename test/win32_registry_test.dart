@@ -253,4 +253,24 @@ void main() {
     check(() => hkcu.createKey(subkeyName)).throws<WindowsException>();
     check(hkcu.subkeyNames.contains(subkeyName)).isFalse();
   });
+
+  test('Open Key on RegistryKey', () {
+    // In any working Windows configuration, this key should have a sizable
+    // number of values.
+    const keyPath = r'Software\Microsoft\Windows NT';
+    final key = Registry.openPath(RegistryHive.localMachine, path: keyPath);
+    final subkey = key.openKey('CurrentVersion',
+        desiredAccessRights: AccessRights.readOnly);
+    check(subkey.values.length).isGreaterThan(0);
+    key.close();
+    subkey.close();
+  });
+
+  test('Open Key on RegistryKey for non existing key should fail', () {
+    const keyPath = r'Software\Microsoft\Windows NT';
+    final key = Registry.openPath(RegistryHive.localMachine, path: keyPath);
+    check(() => key.openKey('OtherVersion',
+        desiredAccessRights: AccessRights.readOnly)).throws<WindowsException>();
+    key.close();
+  });
 }
