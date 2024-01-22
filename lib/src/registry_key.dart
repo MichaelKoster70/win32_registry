@@ -7,6 +7,7 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
 
+import 'models/access_rights.dart';
 import 'models/registry_key_info.dart';
 import 'models/registry_value_type.dart';
 import 'registry_value.dart';
@@ -28,6 +29,26 @@ class RegistryKey {
 
   /// A handle to the current Registry key
   final int hkey;
+
+  /// Opens the specified Registry key.
+  ///
+  /// Note that key names are not case sensitive.
+  ///
+  /// Throws a [WindowsException] if the key cannot be opened.
+  RegistryKey openKey(String keyName,
+      {AccessRights desiredAccessRights = AccessRights.readOnly}) {
+    final lpSubKey = keyName.toNativeUtf16();
+    final phkResult = calloc<HKEY>();
+    try {
+      final retcode = RegOpenKeyEx(
+          hkey, lpSubKey, 0, desiredAccessRights.win32Value, phkResult);
+      if (retcode == ERROR_SUCCESS) return RegistryKey(phkResult.value);
+      throw WindowsException(HRESULT_FROM_WIN32(retcode));
+    } finally {
+      free(lpSubKey);
+      free(phkResult);
+    }
+  }
 
   /// Creates the specified Registry key.
   ///
